@@ -84,7 +84,7 @@ class LoginPacket extends PEPacket {
 			return;
 		}
 		$data = $this->getString();
-		if (ord($data{0}) != 120 || (($decodedData = @zlib_decode($data)) === false)) {
+		if (ord($data[0]) != 120 || (($decodedData = @zlib_decode($data)) === false)) {
 			$body = $data;
 		} else {
 			$body = $decodedData;
@@ -208,7 +208,7 @@ class LoginPacket extends PEPacket {
 		$this->originalProtocol = $this->protocol1;
 		$this->protocol1 = self::convertProtocol($this->protocol1);		
 		$additionalSkinDataList = [
-			'AnimatedImageData', 'CapeId', 'CapeImageHeight', 'CapeImageWidth', 'CapeOnClassicSkin', 'PersonaSkin', 'PremiumSkin', 'SkinAnimationData', 'SkinImageHeight', 'SkinImageWidth', 'SkinResourcePatch'	
+			'PlayFabId','AnimatedImageData', 'CapeId', 'CapeImageHeight', 'CapeImageWidth', 'CapeOnClassicSkin', 'PersonaSkin', 'PremiumSkin', 'SkinAnimationData', 'SkinImageHeight', 'SkinImageWidth', 'SkinResourcePatch'	
 		];
 		$additionalSkinData = [];
 		foreach ($additionalSkinDataList as $propertyName) {

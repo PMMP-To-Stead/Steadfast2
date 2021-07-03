@@ -23,11 +23,9 @@ namespace pocketmine\network\protocol;
 
 #include <rules/DataPacket.h>
 
-
 use pocketmine\inventory\FurnaceRecipe;
 use pocketmine\inventory\ShapedRecipe;
 use pocketmine\inventory\ShapelessRecipe;
-use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentList;
 use pocketmine\utils\BinaryStream;
 
@@ -64,73 +62,49 @@ class CraftingDataPacket extends PEPacket{
 	}
 
 	private static function writeShapelessRecipe(ShapelessRecipe $recipe, BinaryStream $stream, $playerProtocol){
-		if ($playerProtocol >= Info::PROTOCOL_360) {
-			$stream->putString("recipe" . $recipe->getId());
-		}
+		$stream->putString("recipe" . $recipe->getId());
 		$stream->putVarInt($recipe->getIngredientCount());
-		foreach($recipe->getIngredientList() as $item){	
-			if ($playerProtocol >= Info::PROTOCOL_360) {
-				$stream->putSignedVarInt($item->getId());
-				if ($item->getId() !== 0) {
-					$stream->putSignedVarInt($item->getDamage());
-					$stream->putSignedVarInt($item->getCount());
-				}
-			} else {
-				$stream->putSlot($item, $playerProtocol);
+		foreach($recipe->getIngredientList() as $item){
+			$stream->putSignedVarInt($item->getId());
+			if ($item->getId() !== 0) {
+				$stream->putSignedVarInt($item->getDamage());
+				$stream->putSignedVarInt($item->getCount());
 			}
 		}
 
 		$stream->putVarInt(1);
-		$stream->putSlot($recipe->getResult(), $playerProtocol);
+		$stream->putSlotWithoutStackId($recipe->getResult(), $playerProtocol);
 
 		$stream->putUUID($recipe->getId());
-		if ($playerProtocol >= Info::PROTOCOL_350) {
-			$stream->putString(self::RECIPE_TAG_CRAFTING_TABLE);
-		}
-		if ($playerProtocol >= Info::PROTOCOL_361) {
-			$stream->putSignedVarInt(0); // priority
-			if ($playerProtocol >= Info::PROTOCOL_392) {
-				$stream->putVarInt(self::$recipeIndex++);
-			}
-		}
+		$stream->putString(self::RECIPE_TAG_CRAFTING_TABLE);
+		$stream->putSignedVarInt(0); // priority
+		$stream->putVarInt(self::$recipeIndex++);
 
 		return CraftingDataPacket::ENTRY_SHAPELESS;
 	}
 
 	private static function writeShapedRecipe(ShapedRecipe $recipe, BinaryStream $stream, $playerProtocol){
-		if ($playerProtocol >= Info::PROTOCOL_360) {
-			$stream->putString("recipe" . $recipe->getId());
-		}
+		$stream->putString("recipe" . $recipe->getId());
 		$stream->putSignedVarInt($recipe->getWidth());
 		$stream->putSignedVarInt($recipe->getHeight());
 		for($z = 0; $z < $recipe->getWidth(); ++$z){
 			for($x = 0; $x < $recipe->getHeight(); ++$x){
 				$slot = $recipe->getIngredient($x, $z);
-				if ($playerProtocol >= Info::PROTOCOL_360) {
-					$stream->putSignedVarInt($slot->getId());
-					if ($slot->getId() !== 0) {
-						$stream->putSignedVarInt($slot->getDamage());
-						$stream->putSignedVarInt($slot->getCount());
-					}
-				} else {
-					$stream->putSlot($slot, $playerProtocol);	
+				$stream->putSignedVarInt($slot->getId());
+				if ($slot->getId() !== 0) {
+					$stream->putSignedVarInt($slot->getDamage());
+					$stream->putSignedVarInt($slot->getCount());
 				}
 			}
 		}
 
 		$stream->putVarInt(1);
-		$stream->putSlot($recipe->getResult(), $playerProtocol);
+		$stream->putSlotWithoutStackId($recipe->getResult(), $playerProtocol);
 
 		$stream->putUUID($recipe->getId());
-		if ($playerProtocol >= Info::PROTOCOL_350) {
-			$stream->putString(self::RECIPE_TAG_CRAFTING_TABLE);
-		}
-		if ($playerProtocol >= Info::PROTOCOL_361) {
-			$stream->putSignedVarInt(0); // priority
-			if ($playerProtocol >= Info::PROTOCOL_392) {
-				$stream->putVarInt(self::$recipeIndex++);
-			}
-		}
+		$stream->putString(self::RECIPE_TAG_CRAFTING_TABLE);
+		$stream->putSignedVarInt(0); // priority
+		$stream->putVarInt(self::$recipeIndex++);
 
 		return CraftingDataPacket::ENTRY_SHAPED;
 	}
@@ -139,17 +113,13 @@ class CraftingDataPacket extends PEPacket{
 		if($recipe->getInput()->getDamage() !== 0){ //Data recipe
 			$stream->putSignedVarInt($recipe->getInput()->getId());
 			$stream->putSignedVarInt($recipe->getInput()->getDamage());
-			$stream->putSlot($recipe->getResult(), $playerProtocol);
-			if ($playerProtocol >= Info::PROTOCOL_350) {
-				$stream->putString(self::RECIPE_TAG_FURNACE);
-			}
+			$stream->putSlotWithoutStackId($recipe->getResult(), $playerProtocol);
+			$stream->putString(self::RECIPE_TAG_FURNACE);
 			return CraftingDataPacket::ENTRY_FURNACE_DATA;
 		}else{
 			$stream->putSignedVarInt($recipe->getInput()->getId());
-			$stream->putSlot($recipe->getResult(), $playerProtocol);
-			if ($playerProtocol >= Info::PROTOCOL_350) {
-				$stream->putString(self::RECIPE_TAG_FURNACE);
-			}
+			$stream->putSlotWithoutStackId($recipe->getResult(), $playerProtocol);
+			$stream->putString(self::RECIPE_TAG_FURNACE);
 			return CraftingDataPacket::ENTRY_FURNACE;
 		}
 	}
@@ -213,10 +183,8 @@ class CraftingDataPacket extends PEPacket{
 
                 $writer->reset();
             }
-            if($playerProtocol >= Info::PROTOCOL_385){
-                $this->putVarInt(0);
-                $this->putVarInt(0);
-            }
+            $this->putVarInt(0);
+            $this->putVarInt(0);
             $this->putByte($this->cleanRecipes ? 1 : 0);
 	}
 

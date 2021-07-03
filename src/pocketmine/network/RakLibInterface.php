@@ -22,22 +22,16 @@
 namespace pocketmine\network;
 
 use pocketmine\event\player\PlayerCreationEvent;
-use pocketmine\event\server\QueryRegenerateEvent;
-use pocketmine\network\protocol\DataPacket;
-use pocketmine\network\protocol\Info as ProtocolInfo;
 use pocketmine\network\protocol\Info;
 use pocketmine\network\protocol\UnknownPacket;
 use pocketmine\Player;
 use pocketmine\Server;
-use pocketmine\utils\MainLogger;
-use pocketmine\utils\TextFormat;
+use pocketmine\utils\BinaryStream;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\RakLib;
 use raklib\server\RakLibServer;
 use raklib\server\ServerHandler;
 use raklib\server\ServerInstance;
-use pocketmine\utils\Binary;
-use pocketmine\utils\BinaryStream;
 
 class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 	
@@ -179,7 +173,7 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 						try {
 							$pk->decode($player->getPlayerProtocol());
 						}catch(\Exception $e){
-							file_put_contents("logs/" . date('Y.m.d') . "_decode_error.log", $e->getMessage() . "\n", FILE_APPEND | LOCK_EX);
+							file_put_contents("logs/" . date('Y.m.d') . "_decode_error.log", $e->getMessage() . "\n" . $e->getTraceAsString() . "\n", FILE_APPEND | LOCK_EX);
 							return;
 						}
 						$player->handleDataPacket($pk);
@@ -187,6 +181,7 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 				}
 			}catch(\Exception $e){
 				error_log($e->getMessage());
+				error_log($e->getTraceAsString());
 			}
 		}
 	}
@@ -262,13 +257,8 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 		if (isset($this->identifiers[$player])) {
 			$pk = new EncapsulatedPacket();
 			$pk->buffer = $buffer;
-			$pk->reliability = 3;			
-			if ($player->getOriginalProtocol() >= Info::PROTOCOL_406) {
-				$flag = RakLib::FLAG_NEED_ZLIB_RAW;
-			} else {
-				$flag = RakLib::FLAG_NEED_ZLIB;
-			}
-			$this->interface->sendEncapsulated($player->getIdentifier(), $pk,  RakLib::PRIORITY_NORMAL | $flag);
+			$pk->reliability = 3;
+			$this->interface->sendEncapsulated($player->getIdentifier(), $pk,  RakLib::PRIORITY_NORMAL | RakLib::FLAG_NEED_ZLIB_RAW);
 		}
 	}
 	
