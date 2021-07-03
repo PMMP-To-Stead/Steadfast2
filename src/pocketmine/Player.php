@@ -24,6 +24,8 @@ namespace pocketmine;
 use pocketmine\block\Block;
 use pocketmine\block\Liquid;
 use pocketmine\command\CommandSender;
+use pocketmine\form\Form;
+use pocketmine\form\FormValidationException;
 use pocketmine\customUI\CustomUI;
 use pocketmine\entity\Arrow;
 use pocketmine\entity\Effect;
@@ -347,6 +349,12 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer {
 	protected $clientVersion = '';
 
 	protected $originalProtocol = 0;
+
+	/** @var int */
+	protected $formIdCounter = 0;
+
+	/** @var Form[] */
+	protected $forms = [];
 
 	protected $lastModalId = 1;
 
@@ -4478,6 +4486,41 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer {
 
 	public function getOriginalProtocol() {
 		return $this->originalProtocol;
+	}
+
+	public function sendForm(Form $form) : void {
+		$id = $this->formIdCounter++;
+		$pk = new ShowModalFormPacket();
+		$pk->formId = $id;
+		$pk->data = json_encode($form);
+		if ($pk->data === false) {
+
+			throw new \InvalidArgumentException("Failed to encode form JSON: " . json_last_error_msg());
+
+		}
+		if($this->dataPacket($pk)){
+
+			$this->forms[$id] = $form;
+		}
+	}
+
+
+	public function onFormSubmit(int $formId, $responseData) : bool{
+		if(!isset($this->forms[$formId])){
+			$this->server->getLogger()->debug("Got unexpected response for form $formId");
+			return false;
+		}
+
+		try{
+			$this->forms[$formId]->handleResponse($this, $responseData);
+		}catch(FormValidationException $e){
+			$this->server->getLogger()->critical("Failed to validate form " . get_class($this->forms[$formId]) . ": " . $e->getMessage());
+			$this->server->getLogger()->logException($e);
+		}finally{
+			unset($this->forms[$formId]);
+		}
+
+		return true;
 	}
 
 	/**
